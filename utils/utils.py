@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+import re
 
 
 class imdict(dict):
@@ -33,6 +34,7 @@ class Result(imdict):
         errors: Optional[Dict] = None,
         tag: Optional[str] = None,
         error_code: Optional[str] = None,
+        http_error_code: int = 500,
     ):
         self.is_success = success
         self.message = message
@@ -44,6 +46,7 @@ class Result(imdict):
         self.is_warning = True if self.tag == "warning" else False
         self.errors = errors
         self.error_code = error_code
+        self.http_error_code = http_error_code
         dict.__init__(self, is_success=success, message=message, errors=errors)
 
     @classmethod
@@ -51,15 +54,27 @@ class Result(imdict):
         return cls(True, message, instance=instance)
 
     @classmethod
-    def warning(cls, message="", instance=None, error_code=""):
+    def warning(cls, message="", instance=None, error_code=None):
         return cls(
             False, message, instance=instance, error_code=error_code, tag="warning"
         )
 
     @classmethod
-    def error(cls, message="", instance=None, errors=None, error_code=""):
+    def error(
+        cls,
+        message="",
+        instance=None,
+        errors=None,
+        error_code=None,
+        http_error_code=500,
+    ):
         return cls(
-            False, message, instance=instance, errors=errors, error_code=error_code
+            False,
+            message,
+            instance=instance,
+            errors=errors,
+            error_code=error_code,
+            http_error_code=http_error_code,
         )
 
     @classmethod
@@ -80,6 +95,7 @@ class Result(imdict):
             instance=source.get("instance", None),
             errors=source.get("errors", None),
             error_code=source.get("error_code", None),
+            http_error_code=source.get("http_error_code", None),
             tag=tag,
         )
 
@@ -96,8 +112,26 @@ class Result(imdict):
 
         if not self.is_success:
             res_dict["errors"] = self.errors or []
-            res_dict["error_code"] = self.error_code
+            if self.error_code:
+                res_dict["error_code"] = self.error_code
+            if self.http_error_code:
+                res_dict["http_error_code"] = self.http_error_code
         if self.instance:
             res_dict["object"] = self.instance
 
         return res_dict
+
+
+def pascal_to_snake(s: str):
+    """
+    Converts a camel-case or a pascal-case string to snake-case.
+
+    Example:
+        - UserModel => user_model
+        - getPasswordHash => get_password_hash
+        - HTTPRequest => http_request
+    """
+    if not s:
+        return s
+
+    return re.sub(r"(?<!^)(?=[A-Z][a-z])", "_", s).lower()
