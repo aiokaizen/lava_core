@@ -105,7 +105,7 @@ class Result(imdict):
             result = "warning"
 
         res_dict = {
-            "class_name": "lava.utils.Result",
+            "class_name": "lava_core.utils.Result",
             "result": result,
             "message": str(self.message),
         }
